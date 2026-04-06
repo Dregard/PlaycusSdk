@@ -1,0 +1,336 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+# For a list of all available actions, check out https://docs.fastlane.tools/actions
+# For a list of all available plugins, check out https://docs.fastlane.tools/plugins/available-plugins
+
+# Environment variables from Ci system:
+# KEYCHAIN_PATH - path to main keychain with cetificates
+# KEYCHAIN_PASS - pass to main keychain
+# IOS_BUILD_CONFIGURATION - Debug or Release
+# FASTLANE_TEAM_ID - apple team id
+# IOS_SIGN_IDENTITY - full name of signing certificate
+# IOS_PROVISIONG_UUID - ios provisiong uuid (manual signing)
+# IOS_EXPORT_METHOD - app-store or ad-hoc
+# BUILD_FILE_NAME - full path to uploaded ipa file
+# IOS_BUNDLE_ID - Apple app identifier
+# IOS_SKIP_PROCESSING - don't wait ending of processing anddon't auto open build in testflight
+# AS_API_Key - App Store Connect API KeyID
+# AS_API_Issuer - App Store Connect API IssuerID
+# AS_API_Content - App Store Connect API Key Content
+# ONESIGNAL - if true will build with ONESIGNAL extension options
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+platform :mac do
+
+  desc "Upload ./MacApp.pkg to Mac Appstore"
+  lane :pl_deliver_pkg_to_macstore do
+
+    app_store_connect_api_key(
+      key_id: ENV['AS_API_Key'],
+      issuer_id: ENV['AS_API_Issuer'],
+      key_content: ENV['AS_API_Content'],
+      in_house: false
+    )
+
+    deliver(
+      submit_for_review: false,
+      force: true,
+      skip_screenshots: true,
+      run_precheck_before_submit: false,
+      skip_metadata: true,
+      pkg: "./MacApp.pkg"
+    )
+
+  end
+
+end
+
+platform :ios do
+
+  desc "Setup xcodebuild, gym and scan for easier Jenkins integration"
+  lane :pl_setup_jenkins_mac do
+
+    app_store_connect_api_key(
+      key_id: ENV['AS_API_Key'],
+      issuer_id: ENV['AS_API_Issuer'],
+      key_content: ENV['AS_API_Content'],
+      in_house: false
+    )
+
+    setup_jenkins(
+      keychain_path: ENV['KEYCHAIN_PATH'],
+      keychain_password: ENV['KEYCHAIN_PASS'],
+      code_signing_identity: ENV['IOS_SIGN_IDENTITY']
+    )
+
+    cert
+
+  end
+
+  desc "Build ipa from workspace"
+  lane :pl_build_release_auto do
+    ENV['ITMSTRANSPORTER_FORCE_ITMS_PACKAGE_UPLOAD'] = 'false'
+	app_store_connect_api_key(
+   		key_id: ENV['AS_API_Key'],
+		issuer_id: ENV['AS_API_Issuer'],
+		key_content: ENV['AS_API_Content'],
+		in_house: false
+	)
+
+	#provisiong profile name mask to search
+	MY_PROFILE = ENV['IOS_BUNDLE_ID'] + " AppStore"
+	ONESIGNAL_BUNDLE = ENV['IOS_BUNDLE_ID'] + ".OneSignalNotificationServiceExtension"
+    ONESIGNAL_PROFILE = ENV['IOS_BUNDLE_ID'] + " OSAS"
+
+	#Xcode build arguments
+	settings_to = "BUNDLE_IDENTIFIER=#{ENV['IOS_BUNDLE_ID']} DEVELOPMENT_TEAM=#{ENV['FASTLANE_TEAM_ID']} -allowProvisioningUpdates"
+
+	IOS_UPLOAD_SYMBOLS = false;
+	if ENV['IOS_UPLOAD_SYMBOLS'] == "true"
+    	IOS_UPLOAD_SYMBOLS = true;
+  	end
+	IOS_UPLOAD_BITCODE = false;
+	#if ENV['IOS_UPLOAD_BITCODE'] == "true"
+    #	IOS_UPLOAD_BITCODE = true;
+  	#end
+
+	#run build and export ipa
+	if ENV['ONESIGNAL'] == "true"
+	update_code_signing_settings(
+           use_automatic_signing: true
+        )
+    	sigh(force: true)
+	gym(
+		workspace: ENV['Unity-iPhone.xcworkspace'],
+		scheme: "Unity-iPhone",
+		build_path: "buildpath/",
+		derived_data_path: "derived_data_path/",
+		clean: true,
+		output_name: "build.ipa",
+		configuration: ENV['IOS_BUILD_CONFIGURATION'],
+		include_symbols: IOS_UPLOAD_SYMBOLS,
+		include_bitcode: IOS_UPLOAD_BITCODE,
+		xcargs: settings_to,
+		export_options: {
+						method: ENV['IOS_EXPORT_METHOD'],
+						teamID: ENV['FASTLANE_TEAM_ID'],
+						uploadBitcode: IOS_UPLOAD_BITCODE,
+						compileBitcode: IOS_UPLOAD_BITCODE,
+						uploadSymbols: IOS_UPLOAD_SYMBOLS,
+						provisioningProfiles: {
+						  ENV['IOS_BUNDLE_ID'] => MY_PROFILE,
+                          ONESIGNAL_BUNDLE => ONESIGNAL_PROFILE
+												}
+						 }
+		)
+	else
+	#disable auto signing for unity result project
+            update_code_signing_settings(
+                use_automatic_signing: false,
+                targets: "Unity-iPhone",
+                code_sign_identity: ENV['IOS_SIGN_IDENTITY']
+            )
+    #download actual profiles
+	sigh(force: true)
+	#set actual profiles
+        update_code_signing_settings(
+            targets: "Unity-iPhone",
+            profile_name: MY_PROFILE
+        )
+		gym(
+        		workspace: ENV['Unity-iPhone.xcworkspace'],
+        		scheme: "Unity-iPhone",
+        		build_path: "buildpath/",
+        		derived_data_path: "derived_data_path/",
+        		clean: true,
+        		output_name: "build.ipa",
+        		configuration: ENV['IOS_BUILD_CONFIGURATION'],
+        		include_symbols: IOS_UPLOAD_SYMBOLS,
+        		include_bitcode: IOS_UPLOAD_BITCODE,
+        		xcargs: settings_to,
+        		export_options: {
+        						method: ENV['IOS_EXPORT_METHOD'],
+        						teamID: ENV['FASTLANE_TEAM_ID'],
+        						uploadBitcode: IOS_UPLOAD_BITCODE,
+        						compileBitcode: IOS_UPLOAD_BITCODE,
+        						uploadSymbols: IOS_UPLOAD_SYMBOLS,
+        						provisioningProfiles: {
+        						  ENV['IOS_BUNDLE_ID'] => MY_PROFILE
+        												}
+        						 }
+        		)
+	end
+
+  end
+
+  desc "Build ad-hoc ipa from workspace"
+  lane :build_adhoc_auto do
+
+	app_store_connect_api_key(
+   		key_id: ENV['AS_API_Key'],
+		issuer_id: ENV['AS_API_Issuer'],
+		key_content: ENV['AS_API_Content'],
+		in_house: false
+	)
+
+	#provisiong profile name mask to search
+	MY_PROFILE = ENV['IOS_BUNDLE_ID'] + " AdHoc"
+	ONESIGNAL_BUNDLE = ENV['IOS_BUNDLE_ID'] + ".OneSignalNotificationServiceExtension"
+    ONESIGNAL_PROFILE = ENV['IOS_BUNDLE_ID'] + " OSAH"
+
+	#Xcode build arguments
+	settings_to = "BUNDLE_IDENTIFIER=#{ENV['IOS_BUNDLE_ID']} DEVELOPMENT_TEAM=#{ENV['FASTLANE_TEAM_ID']} -allowProvisioningUpdates"
+
+	#run build and export ipa
+	if ENV['ONESIGNAL'] == "true"
+	update_code_signing_settings(
+            use_automatic_signing: true
+        )
+    sigh(force: true, adhoc: true)
+	gym(
+		workspace: ENV['Unity-iPhone.xcworkspace'],
+		scheme: "Unity-iPhone",
+		build_path: "buildpath/",
+		derived_data_path: "derived_data_path/",
+		clean: true,
+		output_name: "build.ipa",
+		configuration: ENV['IOS_BUILD_CONFIGURATION'],
+		include_symbols: false,
+		include_bitcode: false,
+		xcargs: settings_to,
+		export_options: {
+						method: ENV['IOS_EXPORT_METHOD'],
+						teamID: ENV['FASTLANE_TEAM_ID'],
+						uploadBitcode: false,
+						compileBitcode: false,
+						uploadSymbols: false,
+						provisioningProfiles: {
+						  ENV['IOS_BUNDLE_ID'] => MY_PROFILE,
+						  ONESIGNAL_BUNDLE => ONESIGNAL_PROFILE
+												},
+						signingStyle: "automatic"
+						 }
+		)
+	else
+        #disable auto signing for unity result project
+            update_code_signing_settings(
+                use_automatic_signing: false,
+                targets: "Unity-iPhone",
+                code_sign_identity: ENV['IOS_SIGN_IDENTITY']
+            )
+
+        	#generate actual provisions file
+        	sigh(force: true, adhoc: true)
+
+        	# setup downloaded provisions file
+            update_code_signing_settings(
+                targets: "Unity-iPhone",
+                profile_name: MY_PROFILE
+            )
+            #build
+	    gym(
+    		workspace: ENV['Unity-iPhone.xcworkspace'],
+    		scheme: "Unity-iPhone",
+    		build_path: "buildpath/",
+    		derived_data_path: "derived_data_path/",
+    		clean: true,
+    		output_name: "build.ipa",
+    		configuration: ENV['IOS_BUILD_CONFIGURATION'],
+    		include_symbols: false,
+    		include_bitcode: false,
+    		xcargs: settings_to,
+    		export_options: {
+    						method: ENV['IOS_EXPORT_METHOD'],
+    						teamID: ENV['FASTLANE_TEAM_ID'],
+    						uploadBitcode: false,
+    						compileBitcode: false,
+    						uploadSymbols: false,
+    						provisioningProfiles: {
+    						  ENV['IOS_BUNDLE_ID'] => MY_PROFILE
+    												},
+    						signingStyle: "automatic"
+    						 }
+    		)
+	end
+
+  end
+
+  desc "Upload ipa in testflight"
+  lane :pl_build_and_upload_testflight do
+
+    #Autorization
+    app_store_connect_api_key(
+      key_id: ENV['AS_API_Key'],
+      issuer_id: ENV['AS_API_Issuer'],
+      key_content: ENV['AS_API_Content'],
+      in_house: false
+    )
+
+
+    # if you don't have live version in store,
+    # app_store_build_number generate exception
+    # and quit from lane script with error
+    # so, exception need to be caught
+	  begin
+
+      # get current live version
+      app_store_build_number(live:true)
+
+      # download old meta data
+      sh "fastlane deliver download_metadata --force --api_key_path #{ENV['AS_API_Key']}.json --app-version=#{Actions.lane_context[SharedValues::LATEST_VERSION]} --use_live_version --verbose"
+
+      # download old screenshots (if needed)
+      # sh "fastlane deliver download_screenshots --force --api_key_path #{ENV['AS_API_Key']}.json --app-version=#{Actions.lane_context[SharedValues::LATEST_VERSION]} --use_live_version --verbose"
+
+      # create build
+      pl_build_release_auto
+
+      # download old meta data
+      sh "fastlane deliver download_metadata --force --api_key_path #{ENV['AS_API_Key']}.json --app-version=#{Actions.lane_context[SharedValues::LATEST_VERSION]} --use_live_version --verbose"
+
+      # download old screenshots (if needed)
+      # sh "fastlane deliver download_screenshots --force --api_key_path #{ENV['AS_API_Key']}.json --app-version=#{Actions.lane_context[SharedValues::LATEST_VERSION]} --use_live_version --verbose"
+
+	  rescue => ex
+
+	    puts ex
+
+      # create build
+      pl_build_release_auto
+
+	  end
+
+
+    # upload build
+	  upload_to_testflight(
+      uses_non_exempt_encryption: true,
+      skip_waiting_for_build_processing: ENV['IOS_SKIP_PROCESSING'] ,
+      skip_submission: ENV['IOS_SKIP_PROCESSING']
+	  )
+
+	  # create new release in app store and upload old metadata
+      	  deliver(
+                    skip_screenshots: true,
+                    ignore_language_directory_validation: true,
+                    force: true,
+                    run_precheck_before_submit: false,
+                    app_version:ENV['BUILD_NUMBER'],
+                    screenshots_path: "./screenshots",
+                    metadata_path: "./metadata",
+                    build_number:ENV['BUILD_NUMBER']
+                  )
+  end
+
+
+  desc "This action downloads dSYM files from App Store Connect after the ipa gets re-compiled by Apple. Useful if you have Bitcode enabled."
+  lane :pl_dsyms_firebase do
+	  download_dsyms                  # Download dSYM files from iTC
+	  upload_symbols_to_crashlytics   # Upload them to Crashlytics
+  end
+
+end
+

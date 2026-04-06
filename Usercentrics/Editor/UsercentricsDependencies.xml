@@ -1,0 +1,13 @@
+<dependencies>
+    <androidPackages>
+        <androidPackage spec="org.jetbrains.kotlin:kotlin-stdlib-jdk8:[1.9.23]" />
+        <androidPackage spec="com.usercentrics.sdk:usercentrics-ui-unity:[2.24.1-unity]" />
+    </androidPackages>
+
+    <iosPods>
+        <sources>
+            <source>https://bitbucket.org/usercentricscode/usercentrics-ios-specification.git</source>
+        </sources>
+        <iosPod name="UsercentricsUI" version="2.24.1-unity-static" />
+    </iosPods>
+</dependencies>

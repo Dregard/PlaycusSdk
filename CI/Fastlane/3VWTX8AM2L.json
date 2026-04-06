@@ -1,0 +1,7 @@
+{
+  "key_id": "3VWTX8AM2L",
+  "issuer_id": "4567b5e1-7e2a-4e7f-8dfe-3638943cdf4d",
+  "key": "-----BEGIN PRIVATE KEY-----\nMIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgeIixKh4o8/CcnMLk\nnwLvaNtnY0msEK3bXRCu25Ui0D2gCgYIKoZIzj0DAQehRANCAARH80fAvmMmRfnb\nwm4CUUxtKysPlD7DpwX5S3A8Ozz0M51eixjYQEAooMCRE2FvSKqeK4qfPvti28jD\nbO33STGN\n-----END PRIVATE KEY-----",
+  "duration": 1200, 
+  "in_house": false
+}

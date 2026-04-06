@@ -1,0 +1,7 @@
+{
+  "key_id": "2RT72924R8",
+  "issuer_id": "69a6de7c-0a41-47e3-e053-5b8c7c11a4d1",
+  "key": "-----BEGIN PRIVATE KEY-----\nMIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgq2t/UBaVc/OGRvQK\nhYjUR/5zi8kCSFAe47M8igaSP3+gCgYIKoZIzj0DAQehRANCAASTnsepsV29ke/e\nfuITXLxhFGWgNQp/Gt8RDqoCdVqBe7YDxcW4BtF3G+R9THudet1wROUO7D/uPa4W\nDnPm8OIh\n-----END PRIVATE KEY-----",
+  "duration": 1200, 
+  "in_house": false
+}

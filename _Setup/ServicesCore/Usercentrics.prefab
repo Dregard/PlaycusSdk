@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2267560433420120417
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4734347603390658387}
+  - component: {fileID: 291403843272326738}
+  - component: {fileID: 650703919679604465}
+  m_Layer: 0
+  m_Name: Usercentrics
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4734347603390658387
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2267560433420120417}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.7408805, y: 6.3690476, z: -0.8980087}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &291403843272326738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2267560433420120417}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3744782c8b4014366882ac904e51588d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SettingsID: 
+  RulesetID: UxKlz-EOgB16Ne
+  Options:
+    DefaultLanguage: 
+    Version: latest
+    DebugMode: 1
+    TimeoutMillis: 10000
+    NetworkMode: 0
+    ConsentMediation: 1
+    Android:
+      DisableSystemBackButton: 1
+      StatusBarColor: '#f0f0f0'
+  ConfigurationDashboard: https://admin.usercentrics.com
+  Documentation: https://docs.usercentrics.com/cmp_in_app_sdk/latest/
+--- !u!114 &650703919679604465
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2267560433420120417}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd3e135b3f54cc8875fdc34a1d4a73a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _doNotOverwriteFromRemote: 0
+  _readMe: 0

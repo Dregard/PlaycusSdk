@@ -1,0 +1,18 @@
+{
+    "name": "Unity.UsercentricsEditor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:e7909c33999fcc545b24f18698fb9239"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
