@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
+
 // using Playcus.Currency;
 
 namespace Playcus.Ads
@@ -224,5 +226,6 @@ namespace Playcus.Ads
         /// </summary>
         string AdsPlatformName { get; }
 
+        Rect BannerScreenRect { get; }
     }
 }

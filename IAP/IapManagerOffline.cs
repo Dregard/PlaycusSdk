@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 #if PL_IAP_ON
+using Gameson.Dreamwalker.App.ContentData;
 using UnityEngine.Purchasing;
 #endif
 using System.Globalization;
@@ -32,8 +33,9 @@ namespace Playcus.Iap
         // EVENTS
         public event Action Initialized;
         public event Action PurchaseStarted;
-        public event Action<ProductConfig> PurchaseSuccess;
-        public event Action PurchaseFailed;
+        public event Action<Product> PurchaseSuccess;
+        public event Action<string, PurchaseFailureReason> PurchaseFailed;
+        public event Action<bool> TransactionsRestored;
 
         // DEPENDENCIES
         [InjectService] private ISaveService _saveManager;
@@ -57,6 +59,9 @@ namespace Playcus.Iap
         [SerializeField]
         private bool _readme;
 
+        [SerializeField]
+        private InAppPurchasesData _inAppPurchasesData;
+
         protected override Type ConfigType => typeof(IapManagerOfflineConfig);
         protected IapManagerOfflineConfig Config => (IapManagerOfflineConfig) _serviceConfig;
 
@@ -73,6 +78,7 @@ namespace Playcus.Iap
         private IapManagerSaveVO _saveVO = new IapManagerSaveVO();
 
         public (string, string) LastProduct { get; private set; }
+        public ICollection<Product> Products => _storeController != null ? _storeController.products.all : Array.Empty<Product>();
 
         // GET PROPERTIES
         public bool IsInitialised
@@ -122,6 +128,8 @@ namespace Playcus.Iap
                     builder.AddProduct(productConfig.productId, productConfig.productType);
                 }
             }
+
+            IAPConfigurationHelper.PopulateConfigurationBuilder(ref builder, _inAppPurchasesData.GetProductCatalog());
             
             Debug.Log("IAPManager: Initializing IAP now...", gameObject);
             UnityPurchasing.Initialize(this, builder);
@@ -166,7 +174,7 @@ namespace Playcus.Iap
                 $"IAPManager: Purchase failed for product id: {failureDescription.productId}, reason: {failureDescription.reason}, message: {failureDescription.message}",
                 gameObject);
             _analyticsManager.PurchaseFailed(product, failureDescription.reason, _rememberedPlace.ToString());
-            PurchaseFailed?.Invoke();
+            PurchaseFailed?.Invoke(product.definition.id, failureDescription.reason);
         }
 
         public void OnInitializeFailed(InitializationFailureReason failureReason)
@@ -174,7 +182,7 @@ namespace Playcus.Iap
             Debug.LogError($"IAPManager: Initializion failed! Reason: {failureReason}", gameObject);
             // If user try to buy before shop inited - failed buy process
             if (!String.IsNullOrEmpty(_rememberedProductID))
-                PurchaseFailed?.Invoke();
+                PurchaseFailed?.Invoke(_rememberedProductID, PurchaseFailureReason.Unknown);
         }
 
         public void OnInitializeFailed(InitializationFailureReason error, string? message)
@@ -207,14 +215,14 @@ namespace Playcus.Iap
                 if (product == null)
                 {
                     Debug.LogError($"IAPManager: BuyProduct: product with id {productId} does not exist.", gameObject);
-                    PurchaseFailed?.Invoke();
+                    PurchaseFailed?.Invoke(string.Empty, PurchaseFailureReason.ProductUnavailable);
                 } 
                 else if (!product.availableToPurchase)
                 {
                     Debug.LogError($"IAPManager: BuyProduct: product with id {productId} is not available to purchase.",
                         gameObject);
                     _analyticsManager.PurchaseFailed(product, PurchaseFailureReason.ProductUnavailable, placement.ToString());
-                    PurchaseFailed?.Invoke();
+                    PurchaseFailed?.Invoke(productId, PurchaseFailureReason.ProductUnavailable);
                 }
                 else
                 {
@@ -369,7 +377,7 @@ namespace Playcus.Iap
                 }
             }
 
-            PurchaseSuccess?.Invoke(GetProductConfig(product.definition.id));
+            PurchaseSuccess?.Invoke(product);
             return PurchaseProcessingResult.Complete;
         }
 
@@ -380,7 +388,7 @@ namespace Playcus.Iap
                 $"IAPManager: Purchase failed for product id: {product.definition.id}, reason: {failureReason}",
                 gameObject);
             _analyticsManager.PurchaseFailed(product, failureReason, _rememberedPlace.ToString());
-            PurchaseFailed?.Invoke();
+            PurchaseFailed?.Invoke(product.definition.id, failureReason);
         }
 
         // private void OnProductPurchaseFailed()
@@ -626,10 +634,7 @@ namespace Playcus.Iap
                     // PurchaseStarted?.Invoke();
                     _extensionProvider.GetExtension<IAppleExtensions>().RestoreTransactions((result) =>
                     {
-                        if (result == false)
-                        {
-                            PurchaseFailed?.Invoke();
-                        }
+                        TransactionsRestored?.Invoke(result);
                     });
                 }
                 else

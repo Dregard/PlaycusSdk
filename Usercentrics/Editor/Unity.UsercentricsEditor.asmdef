@@ -2,7 +2,9 @@
     "name": "Unity.UsercentricsEditor",
     "rootNamespace": "",
     "references": [
-        "GUID:e7909c33999fcc545b24f18698fb9239"
+        "GUID:343deaaf83e0cee4ca978e7df0b80d21",
+        "GUID:2bafac87e7f4b9b418d9448d219b01ab",
+        "GUID:84290b801f0ff428d8636cf70aca6c76"
     ],
     "includePlatforms": [
         "Editor"

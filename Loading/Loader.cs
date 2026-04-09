@@ -17,7 +17,7 @@ namespace Playcus.Loading
     /// Contains loaded service's GameObjects as transform chields
     /// Documentation https://docs.google.com/document/d/1A6Ce52Xh3iLBiVgYKnjTHNCm4g21k5jln3PdMnZE0To/edit#
     /// </summary>
-    [ExecuteAlways]
+    //[ExecuteAlways]
     public class Loader : MonoBehaviour
     {
         //DEPENDENCIES
@@ -91,7 +91,7 @@ namespace Playcus.Loading
 
 
 
-        private void Awake()
+        protected virtual void Awake()
         {
             if (Application.isEditor && !Application.isPlaying)
                 return;

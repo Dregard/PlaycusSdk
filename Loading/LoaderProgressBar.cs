@@ -23,6 +23,11 @@ namespace Playcus.Loading
         [Range(0.001f,0.1f)]
         [SerializeField] private float _fakePreloadFactor = 0.1f;
 
+        void Awake()
+        {
+
+        }
+
         // Use this for initialization
         private void Start()
         {

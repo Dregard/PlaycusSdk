@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Playcus.Ads
 {
@@ -154,6 +155,7 @@ namespace Playcus.Ads
         void LoadAppOpen();
 
         string PlatformName { get; }
-
+        
+        Rect BannerScreenRect { get; }
     }
 }

@@ -9,7 +9,7 @@
     /// 6. Enum values will be used as converted to strings or as is with different submodule-core systems
 
 
-    /*// REMOVE this line to begin your journey
+    // REMOVE this line to begin your journey
 
 
     /// <summary>
@@ -91,5 +91,5 @@
         Project = 100
         };
 
-    //*/
+    //
 }

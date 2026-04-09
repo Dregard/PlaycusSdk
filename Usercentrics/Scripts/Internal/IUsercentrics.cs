@@ -16,6 +16,8 @@ namespace Unity.Usercentrics
         string GetFirstLayerSettings();
         void AcceptAll();
         void DenyAll();
+        void AcceptAllForGDPR();
+        void DenyAllForGDPR();
         void Track(int eventType);
         void SetCmpId(int cmpId);
         string GetCmpData();
@@ -26,5 +28,6 @@ namespace Unity.Usercentrics
         string GetAdditionalConsentModeData();
         string GetConsents();
         void ClearUserSession();
+        string SaveDecisionsForGDPR(string decisions);
     }
 }

@@ -112,6 +112,22 @@ SDK Key - one for account."
 
         private Action _delayedAction;
 
+        public Rect BannerScreenRect
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_bannerUnitID))
+                    return new Rect(0, Screen.height, Screen.width, 0);
+
+                var density = MaxSdkUtils.GetScreenDensity();
+                var rect = MaxSdk.GetBannerLayout(_bannerUnitID);
+                rect.height = Mathf.Max(rect.height, MaxSdkUtils.GetAdaptiveBannerHeight());
+                rect.y = rect.y > 0f ? rect.y : Screen.height / density - rect.height;
+                rect.min *= density;
+                rect.max *= density;
+                return rect;
+            }
+        }
 
         public bool isInitialized()
         {
@@ -161,8 +177,8 @@ SDK Key - one for account."
             {
 #if GDPR
                 // GDPR flow
-                var gdprService = ServiceLocator.Get<GDPRService>();
-                if (gdprService != null && gdprService.IsGDPRAccepted())
+                var usercentricsService = ServiceLocator.Get<UsercentricsConsentService>();
+                if (usercentricsService != null && usercentricsService.IsGDPRAccepted())
                     MaxSdk.SetHasUserConsent(true);
 #endif
   
@@ -710,12 +726,15 @@ SDK Key - one for account."
                 : MaxSdkBase.BannerPosition.TopCenter;
             MaxSdk.CreateBanner(_bannerUnitID, pos);
 
+            MaxSdkCallbacks.Banner.OnAdLoadFailedEvent += OnBannerAdLoadFailed;
             MaxSdkCallbacks.Banner.OnAdLoadedEvent += OnBannerAdLoaded;
             MaxSdkCallbacks.Banner.OnAdRevenuePaidEvent += OnAdRevenuePaidEvent;
 
             // Set background or background color for banners to be fully functional
             MaxSdk.SetBannerBackgroundColor(_bannerUnitID, _bannerBackgroundColor);
             Debug.Log("ApplovinAdsPlatform InitializeBannerAds success", gameObject);
+
+            MaxSdk.LoadBanner(_bannerUnitID);
         }
         
         public void ShowBanner(BANNER_TYPE bannerType, BANNER_POS bannerPosition, PLACE adsPlaceName)
@@ -745,6 +764,12 @@ SDK Key - one for account."
         private void OnBannerAdLoaded(string obj, MaxSdkBase.AdInfo adInfo)
         {
             //throw new NotImplementedException();
+            Debug.LogWarning($"OnBannerAdLoaded: {obj}");
+        }
+
+        private void OnBannerAdLoadFailed(string obj, MaxSdkBase.ErrorInfo errorInfo)
+        {
+            Debug.LogWarning($"OnBannerAdLoadFailed: {obj} {errorInfo.AdLoadFailureInfo}");
         }
 
         public void HideBanners()

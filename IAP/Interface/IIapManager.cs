@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 #if PL_IAP_ON
 using UnityEngine.Purchasing;
 #endif
@@ -12,11 +10,12 @@ namespace Playcus.Iap
     {
         bool IsInitialised { get; }
         (string, string) LastProduct { get; }
+        ICollection<Product> Products { get; }
 
         event Action Initialized;
         event Action PurchaseStarted;
-        event Action<ProductConfig> PurchaseSuccess;
-        event Action PurchaseFailed;
+        event Action<Product> PurchaseSuccess;
+        event Action<string, PurchaseFailureReason> PurchaseFailed;
 
         void BuyProduct(string productId, string placement);
         ProductConfig GetProductConfig(string productId);

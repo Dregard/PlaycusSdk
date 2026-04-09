@@ -26,6 +26,11 @@ namespace Playcus.Loading
         // [SerializeField] private int _globalInitializationTimeout = 15;
 
         [SerializeField] private bool _waitUsercentrics = true;
+
+        protected override void Awake()
+        {
+            base.Awake();
+        }
         
         protected override IEnumerator LoadServices()
         {

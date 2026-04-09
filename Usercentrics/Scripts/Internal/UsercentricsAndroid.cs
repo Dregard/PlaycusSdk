@@ -91,6 +91,16 @@ namespace Unity.Usercentrics
             _usercentricsUnityClass.Value.CallStatic("denyAllFirstLayerForTCF");
         }
 
+        public void AcceptAllForGDPR()
+        {
+            _usercentricsUnityClass.Value.CallStatic("acceptAllFirstLayerForGDPR");
+        }
+
+        public void DenyAllForGDPR()
+        {
+            _usercentricsUnityClass.Value.CallStatic("denyAllFirstLayerForGDPR");
+        }
+
         public void Track(int eventType)
         {
             _usercentricsUnityClass.Value.CallStatic("track", eventType);
@@ -129,6 +139,11 @@ namespace Unity.Usercentrics
         public void ClearUserSession()
         {
             _usercentricsUnityClass.Value.CallStatic("clearUserSession");
+        }
+
+        public string SaveDecisionsForGDPR(string decisions)
+        { 
+            return _usercentricsUnityClass.Value.CallStatic<string>("saveDecisionsForGDPR", decisions);
         }
     }
 }

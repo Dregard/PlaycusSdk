@@ -20,7 +20,7 @@ namespace Playcus.Services.Unity
             // wait & initialize services
             Debug.Log("UnityServicesInitializer: Initializing UnityServices now...", gameObject);
           
-            await UnityServices.InitializeAsync(options);
+            //await UnityServices.InitializeAsync(options);
                
             ServiceLoadingComplete();
         }

@@ -6,6 +6,7 @@ using Playcus.Iap;
 using UnityEngine;
 using Playcus.Analytics;
 using Playcus;
+using UnityEngine.Purchasing;
 
 namespace Playcus.Ads
 {
@@ -46,6 +47,8 @@ namespace Playcus.Ads
         protected AdsApiConfig Config => (AdsApiConfig) _serviceConfig;
 
         public string AdsPlatformName => _adsPlatform != null ? _adsPlatform.PlatformName : "undefined";
+
+        public Rect BannerScreenRect => _adsPlatform != null ? _adsPlatform.BannerScreenRect : Rect.zero;
 
         // PRIVATE VARIABLES
         private bool _adDisabled;
@@ -320,12 +323,12 @@ namespace Playcus.Ads
             _iapManager.PurchaseFailed += OnPurchaseFailed;
         }
 
-        private void OnPurchaseFailed()
+        private void OnPurchaseFailed(string productId, PurchaseFailureReason failureReason)
         {
             _isPurchaseInProgressNow = false;
         }
 
-        private void OnPurchaseSuccess(ProductConfig obj)
+        private void OnPurchaseSuccess(UnityEngine.Purchasing.Product product)
         {
             _isPurchaseInProgressNow = false;
         }

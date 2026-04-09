@@ -92,6 +92,7 @@ namespace Unity.Usercentrics
         public string version;
         public bool isEssential;
         public string _type;
+        public string category;
 
         public UsercentricsConsentType? type
         {
@@ -494,5 +495,24 @@ namespace Unity.Usercentrics
         {
             this.list = list;
         }
+    }
+
+    [Serializable]
+    public class UsercentricsUserDecision
+    {
+        public string serviceId;
+        public bool consent;
+    }
+    
+    [Serializable]
+    public class UsercentricsUserDecisionListWrapper
+    {
+        public List<UsercentricsUserDecision> decisions;
+    }
+    
+    [Serializable]
+    public class UsercentricsServiceConsentWrapper
+    {
+        public List<UsercentricsServiceConsent> consents;
     }
 }

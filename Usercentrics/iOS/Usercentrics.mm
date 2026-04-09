@@ -2,7 +2,6 @@
 #import <Usercentrics/Usercentrics.h>
 #import <UsercentricsUI/UsercentricsUI-Swift.h>
 #import <UIKit/UIKit.h>
-#import <UnityFramework/UnityFramework.h>
 
 extern UIViewController *UnityGetGLViewController();
 extern char *toChar(NSString *value);
@@ -34,7 +33,7 @@ NSString* _Nonnull UcCreateNSString(const char* string) {
 extern "C" {
 
     void ucInitCMP(const char* initialArgs) {
-        [UsercentricsResourceLoader setBundleInput:[NSBundle bundleForClass:[UnityFramework class]]];
+        // bundleInit
         [[UsercentricsUsercentricsUnityCompanion companion] doInitAppContext:nil rawUnityUserOptions:UcCreateNSString(initialArgs)];
     }
 
@@ -91,6 +90,14 @@ extern "C" {
     void ucDenyAll() {
         [[UsercentricsUsercentricsUnityCompanion companion] denyAllFirstLayerForTCF];
     }
+    
+    void ucAcceptAllForGDPR() {
+        [[UsercentricsUsercentricsUnityCompanion companion] acceptAllFirstLayerForGDPR];
+    }
+    
+    void ucDenyAllForGDPR() {
+        [[UsercentricsUsercentricsUnityCompanion companion] denyAllFirstLayerForGDPR];
+    }
 
     void ucTrack(int eventType) {
         [[UsercentricsUsercentricsUnityCompanion companion] trackEventTypeEnumIndex:eventType];
@@ -123,4 +130,8 @@ extern "C" {
     void ucClearUserSession() {
         [[UsercentricsUsercentricsUnityCompanion companion] clearUserSession];
     }
+    
+    char* ucSaveDecisionsForGDPR(char* decisions) {
+         return toChar([[UsercentricsUsercentricsUnityCompanion companion] saveDecisionsForGDPRDecisions:UcCreateNSString(decisions)]);
+    };
 }
