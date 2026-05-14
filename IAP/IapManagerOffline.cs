@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 #if PL_IAP_ON
-using Gameson.Dreamwalker.App.ContentData;
 using UnityEngine.Purchasing;
 #endif
 using System.Globalization;
@@ -58,9 +57,6 @@ namespace Playcus.Iap
             , HelpBoxMessageType.Info)]
         [SerializeField]
         private bool _readme;
-
-        [SerializeField]
-        private InAppPurchasesData _inAppPurchasesData;
 
         protected override Type ConfigType => typeof(IapManagerOfflineConfig);
         protected IapManagerOfflineConfig Config => (IapManagerOfflineConfig) _serviceConfig;
@@ -128,8 +124,6 @@ namespace Playcus.Iap
                     builder.AddProduct(productConfig.productId, productConfig.productType);
                 }
             }
-
-            IAPConfigurationHelper.PopulateConfigurationBuilder(ref builder, _inAppPurchasesData.GetProductCatalog());
             
             Debug.Log("IAPManager: Initializing IAP now...", gameObject);
             UnityPurchasing.Initialize(this, builder);
