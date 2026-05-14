@@ -103,7 +103,7 @@ namespace Playcus.Iap
           
             if (UnityServices.State != ServicesInitializationState.Initialized)
             {
-                await UniTask.WaitUntil(() => UnityServices.State == ServicesInitializationState.Initialized);
+                //await UniTask.WaitUntil(() => UnityServices.State == ServicesInitializationState.Initialized);
             }
 
             Debug.Log("IAPManager: UnityServices initialization complete", gameObject);
