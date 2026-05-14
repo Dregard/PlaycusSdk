@@ -248,6 +248,9 @@ SDK Key - one for account."
             }
 #endif
             MaxSdk.SetExtraParameter("return_audio_focus", "true");
+            
+            // potential fix by https://github.com/AppLovin/AppLovin-MAX-Unity-Plugin/issues/362
+            MaxSdk.SetExtraParameter("pisw", "true");
 
             // AppLovin SDK is initialized, start loading ads
 
