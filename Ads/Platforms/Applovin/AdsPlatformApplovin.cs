@@ -1,17 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using AppsFlyerSDK;
-using Cysharp.Threading.Tasks;
 using Playcus.Analytics;
+using UnityEngine;
 #if GDPR
     using Playcus.GDPR;
 #endif
-using Playcus.Utils;
-using UnityEngine;
 #if PL_SDK_PLAYCUSDATALAKE_ON
 using PlaycusDL;
 
@@ -33,17 +26,18 @@ namespace Playcus.Ads
     /// </summary>
     public class AdsPlatformApplovin : MonoBehaviour, IAdsPlatform
     {
-#region consent
+        #region consent
 
         public static void SetConsent(bool consentGiven)
-        {     
+        {
             MaxSdk.SetHasUserConsent(consentGiven);
         }
-        
-#endregion
+
+        #endregion
 
         // DEPENDENCIES
-        [InjectService] private IAnalyticsManager _analyticsManager;
+        [InjectService]
+        private IAnalyticsManager _analyticsManager;
 
         // EVENTS
         public event Action RectChanged;
@@ -59,6 +53,7 @@ namespace Playcus.Ads
         public event Action AppOpenShowed;
         public event Action AppOpenClosed;
         public event Action MRecAdLoaded;
+
         public event Action MRecAdLoadFailed;
         //public event Action MRecAdClicked;
         //public event Action MRecAdRevenuePaid;
@@ -76,21 +71,40 @@ SDK Key - one for account."
             "5AAhiuFzwRBZXL6NRkfMQIFE9TpJ-fX4qinXb1VVTh4_1ANSv1qJJ3TSWLnV_Jaq1LLcMr7rXCqTMC0FDqZXu6";
 
         [Header("IDs for ads")]
-        [SerializeField] private string _interstitialUnitID;
-        [SerializeField] private string _rewardedUnitID;
-        [SerializeField] private string _bannerUnitID;
-        [SerializeField] private string _MERCUnitID;
-        [SerializeField] private string _appOpenUnitID;
-        
-        [Header("Other ad settings")]
-        [SerializeField] private Color _bannerBackgroundColor = Color.black;
+        [SerializeField]
+        private string _interstitialUnitID;
 
-        [Header("TAM AMAZON")] 
-        [SerializeField] private string appId;
-        [SerializeField] private  string amazonBannerSlotId; //320x50
-        [SerializeField] private  string amazonInterstitialSlotId;
-        [SerializeField] private  string amazonInterstitialVideoSlotId;
-        [SerializeField] private  string amazonRewardedVideoSlotId;
+        [SerializeField]
+        private string _rewardedUnitID;
+
+        [SerializeField]
+        private string _bannerUnitID;
+
+        [SerializeField]
+        private string _MERCUnitID;
+
+        [SerializeField]
+        private string _appOpenUnitID;
+
+        [Header("Other ad settings")]
+        [SerializeField]
+        private Color _bannerBackgroundColor = Color.black;
+
+        [Header("TAM AMAZON")]
+        [SerializeField]
+        private string appId;
+
+        [SerializeField]
+        private string amazonBannerSlotId; //320x50
+
+        [SerializeField]
+        private string amazonInterstitialSlotId;
+
+        [SerializeField]
+        private string amazonInterstitialVideoSlotId;
+
+        [SerializeField]
+        private string amazonRewardedVideoSlotId;
 
 #if PL_AMAZON_TAM_ON && !UNITY_EDITOR
         private bool _isFirstInterstitialRequest = true;
@@ -102,7 +116,7 @@ SDK Key - one for account."
 
         public string PlatformName => "Applovin";
 
-#if PL_SDK_APPLOVIN_ON//&& (UNITY_IOS || UNITY_ANDROID||UNITY_STANDALONE_OSX||UNITY_) 
+#if PL_SDK_APPLOVIN_ON //&& (UNITY_IOS || UNITY_ANDROID||UNITY_STANDALONE_OSX||UNITY_) 
         // PRIVATE
         private bool _isInitialized;
 
@@ -167,7 +181,7 @@ SDK Key - one for account."
 #endif
             
             // You should start listening to the sdk initialized event before initializing the sdk.
-            MaxSdkCallbacks.OnSdkInitializedEvent +=  (MaxSdkBase.SdkConfiguration sdkConfiguration) =>
+            MaxSdkCallbacks.OnSdkInitializedEvent += (MaxSdkBase.SdkConfiguration sdkConfiguration) =>
             {
                 InitAds(rewardedEnabled, interstitialEnabled, bannerEnabled, bannerPos, appOpenEnabled, sdkConfiguration);
             };
@@ -880,13 +894,16 @@ SDK Key - one for account."
             if (string.IsNullOrEmpty(_appOpenUnitID)) return;
             MaxSdk.LoadInterstitial(_appOpenUnitID);
         }
-        
+
 #else
+        public Rect BannerScreenRect => Rect.zero;
+
         public bool isInitialized()
         {
             DebugMessage();
             return false;
         }
+
         public void Init(bool rewardedEnabled, bool interstitialEnabled, bool bannerEnabled, BANNER_POS bannerPos, bool appOpenEnabled)
         {
             DebugMessage();
@@ -907,6 +924,7 @@ SDK Key - one for account."
         {
             DebugMessage();
         }
+
         public bool IsRewardedReady()
         {
             DebugMessage();
@@ -924,6 +942,7 @@ SDK Key - one for account."
             DebugMessage();
             RewardCompleted?.Invoke();
         }
+
         public bool IsBannerReady()
         {
             DebugMessage();
@@ -939,6 +958,7 @@ SDK Key - one for account."
         {
             DebugMessage();
         }
+
         public void HideBanners()
         {
             DebugMessage();
@@ -995,7 +1015,6 @@ SDK Key - one for account."
             DebugMessage();
         }
 
-
         private void DebugMessage()
         {
             Debug.LogWarning(
@@ -1003,6 +1022,6 @@ SDK Key - one for account."
                 gameObject);
         }
 
-#endif 
+#endif
     }
 }

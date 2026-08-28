@@ -1,8 +1,7 @@
-﻿using UnityEngine;
+﻿#if PL_IAP_ON
+using UnityEngine;
 using System.Collections.Generic;
-#if PL_IAP_ON
 using UnityEngine.Purchasing;
-#endif
 using System.Globalization;
 using System;
 using Playcus.Saves;
@@ -22,13 +21,8 @@ namespace Playcus.Iap
     /// IAnalyticsManager support included with predefined events.
     /// </summary>
     [ServiceBind(typeof(IIapManager))]
-    public class IapManagerOffline : ServiceWithConfig, 
-        IIapManager
-#if PL_IAP_ON
-        , IDetailedStoreListener 
-#endif
+    public class IapManagerOffline : ServiceWithConfig, IIapManager , IDetailedStoreListener 
     {
-#if PL_IAP_ON
         // EVENTS
         public event Action Initialized;
         public event Action PurchaseStarted;
@@ -902,7 +896,7 @@ namespace Playcus.Iap
                 _saveManager.Save();
             }
         }
-#else
+
         protected override Type ConfigType { get; }
         public bool IsInitialised { get; }
         public (string, string) LastProduct { get; }
@@ -924,11 +918,9 @@ namespace Playcus.Iap
             return null;
         }
 
-#if PL_IAP_ON
         public Product GetProductInformation(string productId)
         {
         }
-#endif
 
         public string GetProductPrice(string productId)
         {
@@ -958,6 +950,6 @@ namespace Playcus.Iap
         {
             return null;
         }
-#endif
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if PL_IAP_ON
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -664,3 +665,4 @@ namespace Playcus.Ads
         }
     }
 }
+#endif

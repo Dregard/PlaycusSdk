@@ -1,8 +1,7 @@
-﻿using System;
+﻿#if PL_IAP_ON
+using System;
 using System.Collections.Generic;
-#if PL_IAP_ON
 using UnityEngine.Purchasing;
-#endif
 
 namespace Playcus.Iap
 {
@@ -20,9 +19,7 @@ namespace Playcus.Iap
         void BuyProduct(string productId, string placement);
         ProductConfig GetProductConfig(string productId);
         ProductConfig FindProduct(string productIDEndMask);
-#if PL_IAP_ON
         Product GetProductInformation(string productId);
-#endif
         string GetProductPrice(string productId);
         bool IsProductPurchased(string productId);
         bool IsProductWasPurchased(string productId);
@@ -31,3 +28,4 @@ namespace Playcus.Iap
         string GetSubscriptionPriceOff(string productConfigProductId);
     }
 }
+#endif

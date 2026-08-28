@@ -1,30 +1,25 @@
 ﻿using System;
- using System.Collections.Generic;
- using System.IO;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Xml;
 using GooglePlayServices;
 using Playcus;
 using Unity.Editor;
 using UnityEditor;
-using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
-using UnityEditor.Purchasing;
-using UnityEditor.Callbacks;
-using UnityEditor.Android;
-using UnityEngine;
-using UnityEngine.Purchasing;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
-
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+using UnityEditor.Purchasing;
+using UnityEngine;
+using UnityEngine.Purchasing;
 
 /// <summary>
 /// Methods for automatic builds with external calling from Ci systems or Editor
 /// </summary>
-[InitializeOnLoad]
 public static class AutoBuilder
 {
     /// <summary>
@@ -35,19 +30,19 @@ public static class AutoBuilder
         // Check if Unity is running in batch mode (CI/CD)
         if (Application.isBatchMode)
             return true;
-        
+
         // Check for CI/CD environment variables
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JENKINS_URL")))
             return true;
-        
+
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
             return true;
-        
+
         // Check for explicit CI flag
-        string ciFlag = Environment.GetEnvironmentVariable("UNITY_CI_BUILD");
+        var ciFlag = Environment.GetEnvironmentVariable("UNITY_CI_BUILD");
         if (!string.IsNullOrEmpty(ciFlag) && Convert.ToBoolean(ciFlag))
             return true;
-        
+
         return false;
     }
 
@@ -58,11 +53,11 @@ public static class AutoBuilder
     {
         if (buildReport.summary.result == BuildResult.Succeeded)
         {
-            string outputPath = buildReport.summary.outputPath;
+            var outputPath = buildReport.summary.outputPath;
             if (!string.IsNullOrEmpty(outputPath))
             {
                 // Convert to absolute path if relative
-                string fullPath = Path.IsPathRooted(outputPath) ? outputPath : Path.GetFullPath(Path.Combine(Application.dataPath, "..", outputPath));
+                var fullPath = Path.IsPathRooted(outputPath) ? outputPath : Path.GetFullPath(Path.Combine(Application.dataPath, "..", outputPath));
                 Debug.Log($"✅ {buildName} build completed successfully\n   Path: {fullPath}");
             }
             else
@@ -72,14 +67,15 @@ public static class AutoBuilder
         }
         else
         {
-            string errorMessage = $"❌ {buildName} build FAILED: {buildReport.summary.result}";
+            var errorMessage = $"❌ {buildName} build FAILED: {buildReport.summary.result}";
             if (buildReport.summary.totalErrors > 0)
             {
                 errorMessage += $"\nTotal errors: {buildReport.summary.totalErrors}";
                 errorMessage += $"\nTotal warnings: {buildReport.summary.totalWarnings}";
             }
+
             Debug.LogError(errorMessage);
-            
+
 #if UNITY_EDITOR
             // Only exit Unity if running in CI/CD environment
             if (IsCIBuild())
@@ -106,7 +102,7 @@ public static class AutoBuilder
             var devEnv = Environment.GetEnvironmentVariable("DEVELOPMENT");
             if (!string.IsNullOrEmpty(devEnv))
                 return Convert.ToBoolean(devEnv);
-            
+
             // Fallback to EditorPrefs for Editor builds
 #if UNITY_EDITOR
             return EditorPrefs.GetBool("AutoBuilder.Development", true);
@@ -126,7 +122,7 @@ public static class AutoBuilder
             var destination = Environment.GetEnvironmentVariable("DESTINATION");
             if (!string.IsNullOrEmpty(destination))
                 return destination == "RELEASE";
-            
+
             // Fallback to EditorPrefs for Editor builds
 #if UNITY_EDITOR
             return EditorPrefs.GetBool("AutoBuilder.Release", false);
@@ -135,7 +131,6 @@ public static class AutoBuilder
 #endif
         }
     }
-
 
     public static string TargetStoreSymbol { get; private set; }
 
@@ -305,7 +300,6 @@ public static class AutoBuilder
     {
         EditorApplication.delayCall += () =>
         {
-
             var envVar = "UNITY_STORE";
             var enabled = Convert.ToBoolean(Environment.GetEnvironmentVariable(envVar));
             enabled = !enabled;
@@ -323,8 +317,6 @@ public static class AutoBuilder
             Debug.Log($"Environment variables settled: {envVar}={Environment.GetEnvironmentVariable(envVar)}");
         };
     }
-
-
 
     /// <summary>
     /// Run Android build with Gradle (Export project only) - Development
@@ -379,17 +371,17 @@ public static class AutoBuilder
     [MenuItem("Build/Android/Setup Keystore Passwords", false, 20)]
     public static void SetupKeystorePasswords()
     {
-        string keystorePass = EditorPrefs.GetString("AutoBuilder.KeystorePass", "");
-        string keyaliasPass = EditorPrefs.GetString("AutoBuilder.KeyaliasPass", "");
+        var keystorePass = EditorPrefs.GetString("AutoBuilder.KeystorePass", "");
+        var keyaliasPass = EditorPrefs.GetString("AutoBuilder.KeyaliasPass", "");
 
         // Simple sequential prompts since Unity doesn't have a multi-field dialog
-        string newKeystorePass = KeystorePasswordPrompt.Show("Keystore Password",
+        var newKeystorePass = KeystorePasswordPrompt.Show("Keystore Password",
             "Enter keystore password (stored locally in EditorPrefs, not in project):",
             keystorePass);
 
         if (newKeystorePass == null) return; // cancelled
 
-        string newKeyaliasPass = KeystorePasswordPrompt.Show("Key Alias Password",
+        var newKeyaliasPass = KeystorePasswordPrompt.Show("Key Alias Password",
             "Enter key alias password:",
             keyaliasPass);
 
@@ -452,10 +444,9 @@ public static class AutoBuilder
         BuildAndroidApk();
     }
 
-
     public static void PrepareUDPExport()
     {
-        string store = Environment.GetEnvironmentVariable("UNITY_STORE");
+        var store = Environment.GetEnvironmentVariable("UNITY_STORE");
         if (!string.IsNullOrEmpty(store))
             Debug.LogError("UNITY_STORE global variable is not set!");
 
@@ -479,14 +470,13 @@ public static class AutoBuilder
         RemoveFirebaseFromManifest();
 
         //Switch market to UDP App Store
-        UnityPurchasingEditor.TargetAndroidStore(AppStore.UDP);
+        UnityPurchasingEditor.TargetAndroidStore(AppStore.NotSpecified);
 
         AssetDatabase.SaveAssets();
 
         EditorCoroutinesUtility.StartWaitingCoroutine();
         PlayServicesResolver.Resolve(EditorCoroutinesUtility.StopWaitingCoroutine, true);
     }
-
 
     public static void PrepareAmazonForExportGradleProject()
     {
@@ -510,7 +500,7 @@ public static class AutoBuilder
         RemoveFirebaseFromManifest();
 
         //Switch market to Amazon App Store
-        UnityPurchasingEditor.TargetAndroidStore(AppStore.AmazonAppStore);
+        UnityPurchasingEditor.TargetAndroidStore(AppStore.NotSpecified);
 
         AssetDatabase.SaveAssets();
 
@@ -560,7 +550,7 @@ public static class AutoBuilder
 
         // Switch market to Amazon App Store
         Debug.Log("[AmazonGradleBuildApk] Step 6: Switching Unity Purchasing to Amazon App Store...");
-        UnityPurchasingEditor.TargetAndroidStore(AppStore.AmazonAppStore);
+        UnityPurchasingEditor.TargetAndroidStore(AppStore.NotSpecified);
         Debug.Log("[AmazonGradleBuildApk] Step 6: Unity Purchasing target set to Amazon");
 
         // Export Gradle project (same as AndroidGradleExport) instead of building APK directly
@@ -578,7 +568,7 @@ public static class AutoBuilder
     /// </summary>
     public static void BuildAndroid()
     {
-        string store = Environment.GetEnvironmentVariable("UNITY_STORE");
+        var store = Environment.GetEnvironmentVariable("UNITY_STORE");
 
         if (string.IsNullOrEmpty(store) || store == "GooglePlay")
         {
@@ -617,13 +607,13 @@ public static class AutoBuilder
         // Release build
         PlayerSettings.Android.useCustomKeystore = true;
 
-        string envKeystoreName = Environment.GetEnvironmentVariable("UNITY_ANDROID_KEYSTORE_NAME");
-        string envKeystorePass = Environment.GetEnvironmentVariable("UNITY_ANDROID_KEYSTORE_PASS");
-        string envKeyaliasName = Environment.GetEnvironmentVariable("UNITY_ANDROID_KEYALIAS_NAME");
-        string envKeyaliasPass = Environment.GetEnvironmentVariable("UNITY_ANDROID_KEYALIAS_PASS");
+        var envKeystoreName = Environment.GetEnvironmentVariable("UNITY_ANDROID_KEYSTORE_NAME");
+        var envKeystorePass = Environment.GetEnvironmentVariable("UNITY_ANDROID_KEYSTORE_PASS");
+        var envKeyaliasName = Environment.GetEnvironmentVariable("UNITY_ANDROID_KEYALIAS_NAME");
+        var envKeyaliasPass = Environment.GetEnvironmentVariable("UNITY_ANDROID_KEYALIAS_PASS");
 
-        bool hasEnvVars = !string.IsNullOrEmpty(envKeystoreName) && !string.IsNullOrEmpty(envKeystorePass) &&
-                          !string.IsNullOrEmpty(envKeyaliasName) && !string.IsNullOrEmpty(envKeyaliasPass);
+        var hasEnvVars = !string.IsNullOrEmpty(envKeystoreName) && !string.IsNullOrEmpty(envKeystorePass) &&
+                         !string.IsNullOrEmpty(envKeyaliasName) && !string.IsNullOrEmpty(envKeyaliasPass);
 
         if (hasEnvVars)
         {
@@ -639,10 +629,10 @@ public static class AutoBuilder
             // Editor mode: Unity does not persist keystore passwords between sessions,
             // so we store them in EditorPrefs (per-machine, not in version control).
             // Keystore path and alias name are persisted by Unity, only passwords need EditorPrefs.
-            string keystoreName = PlayerSettings.Android.keystoreName;
-            string keyaliasName = PlayerSettings.Android.keyaliasName;
-            string keystorePass = PlayerSettings.Android.keystorePass;
-            string keyaliasPass = PlayerSettings.Android.keyaliasPass;
+            var keystoreName = PlayerSettings.Android.keystoreName;
+            var keyaliasName = PlayerSettings.Android.keyaliasName;
+            var keystorePass = PlayerSettings.Android.keystorePass;
+            var keyaliasPass = PlayerSettings.Android.keyaliasPass;
 
             // If passwords are empty (typical after editor restart), restore from EditorPrefs
             if (string.IsNullOrEmpty(keystorePass))
@@ -653,8 +643,8 @@ public static class AutoBuilder
             PlayerSettings.Android.keystorePass = keystorePass;
             PlayerSettings.Android.keyaliasPass = keyaliasPass;
 
-            bool valid = !string.IsNullOrEmpty(keystoreName) && !string.IsNullOrEmpty(keystorePass) &&
-                         !string.IsNullOrEmpty(keyaliasName) && !string.IsNullOrEmpty(keyaliasPass);
+            var valid = !string.IsNullOrEmpty(keystoreName) && !string.IsNullOrEmpty(keystorePass) &&
+                        !string.IsNullOrEmpty(keyaliasName) && !string.IsNullOrEmpty(keyaliasPass);
 
             if (valid)
             {
@@ -663,12 +653,12 @@ public static class AutoBuilder
             else
             {
                 Debug.LogWarning("Android Build: Release build requires keystore settings. " +
-                               "Use Build > Android > Setup Keystore Passwords to configure, " +
-                               "or set UNITY_ANDROID_KEYSTORE_* environment variables for CI/CD. " +
-                               $"keystoreName: {!string.IsNullOrEmpty(keystoreName)}, " +
-                               $"keystorePass: {!string.IsNullOrEmpty(keystorePass)}, " +
-                               $"keyaliasName: {!string.IsNullOrEmpty(keyaliasName)}, " +
-                               $"keyaliasPass: {!string.IsNullOrEmpty(keyaliasPass)}");
+                                 "Use Build > Android > Setup Keystore Passwords to configure, " +
+                                 "or set UNITY_ANDROID_KEYSTORE_* environment variables for CI/CD. " +
+                                 $"keystoreName: {!string.IsNullOrEmpty(keystoreName)}, " +
+                                 $"keystorePass: {!string.IsNullOrEmpty(keystorePass)}, " +
+                                 $"keyaliasName: {!string.IsNullOrEmpty(keyaliasName)}, " +
+                                 $"keyaliasPass: {!string.IsNullOrEmpty(keyaliasPass)}");
             }
         }
     }
@@ -698,7 +688,7 @@ public static class AutoBuilder
         // Keystore settings - Use debug key for Development, production keystore for Release
         SetupAndroidKeystore();
 
-        string splitApk = Environment.GetEnvironmentVariable("UNITY_ANDROID_SPLIT_APK");
+        var splitApk = Environment.GetEnvironmentVariable("UNITY_ANDROID_SPLIT_APK");
         if (!string.IsNullOrEmpty(splitApk))
             PlayerSettings.Android.buildApkPerCpuArchitecture = Convert.ToBoolean(splitApk);
 
@@ -732,7 +722,7 @@ public static class AutoBuilder
         else
         {
             // Release - For best compability
-            string X86_64_enabled = Environment.GetEnvironmentVariable("ANDROID_PC_X86_64_ENABLED");
+            var X86_64_enabled = Environment.GetEnvironmentVariable("ANDROID_PC_X86_64_ENABLED");
             if (!string.IsNullOrEmpty(X86_64_enabled) && Convert.ToBoolean(X86_64_enabled))
             {
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7 | AndroidArchitecture.X86_64;
@@ -780,16 +770,16 @@ public static class AutoBuilder
         BuildAddressable();
 
         // Determine output path (APK or AAB based on buildAppBundle setting)
-        string extension = EditorUserBuildSettings.buildAppBundle ? "aab" : "apk";
-        string buildFileName = $"build_{VersioningHelperUtility.VersionNumber}_{VersioningHelperUtility.BuildNumber}.{extension}";
-        string buildPath = Path.Combine("Build", buildFileName);
+        var extension = EditorUserBuildSettings.buildAppBundle ? "aab" : "apk";
+        var buildFileName = $"build_{VersioningHelperUtility.VersionNumber}_{VersioningHelperUtility.BuildNumber}.{extension}";
+        var buildPath = Path.Combine("Build", buildFileName);
 
         Debug.Log($"Building Android {extension.ToUpper()} to: {buildPath}");
 
         //Build APK/AAB directly
         // Note: Gradle wrapper and dependencies are updated automatically via UpdateGradleWrapper.OnPostGenerateGradleAndroidProject
         // after Unity generates the Gradle project, so we don't need to update them here
-        BuildReport buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), buildPath, BuildTarget.Android, buildOptions);
+        var buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), buildPath, BuildTarget.Android, buildOptions);
 
         ValidateBuildResult(buildReport, $"Android {extension.ToUpper()} ({buildPath})");
     }
@@ -868,7 +858,7 @@ public static class AutoBuilder
         // Keystore settings - Use debug key for Development, production keystore for Release
         SetupAndroidKeystore();
 
-        string splitApk = Environment.GetEnvironmentVariable("UNITY_ANDROID_SPLIT_APK");
+        var splitApk = Environment.GetEnvironmentVariable("UNITY_ANDROID_SPLIT_APK");
         if (!string.IsNullOrEmpty(splitApk))
             PlayerSettings.Android.buildApkPerCpuArchitecture = Convert.ToBoolean(splitApk);
 
@@ -902,7 +892,7 @@ public static class AutoBuilder
         else
         {
             // Release - For best compability
-            string X86_64_enabled = Environment.GetEnvironmentVariable("ANDROID_PC_X86_64_ENABLED");
+            var X86_64_enabled = Environment.GetEnvironmentVariable("ANDROID_PC_X86_64_ENABLED");
             if (!string.IsNullOrEmpty(X86_64_enabled) && Convert.ToBoolean(X86_64_enabled))
             {
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7 | AndroidArchitecture.X86_64;
@@ -912,7 +902,7 @@ public static class AutoBuilder
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
             }
         }
-        
+
         // Symbols for crash debugging
         EditorUserBuildSettings.androidCreateSymbols = AndroidCreateSymbols.Debugging;
 
@@ -951,14 +941,14 @@ public static class AutoBuilder
 
         // Clean existing Gradle project to avoid template version mismatch errors
         // Unity expects a clean folder or matching template version
-        string fullAndroidBuildPath = Path.Combine(Application.dataPath, "..", AndroidBuildPath);
+        var fullAndroidBuildPath = Path.Combine(Application.dataPath, "..", AndroidBuildPath);
         if (Directory.Exists(fullAndroidBuildPath))
         {
             try
             {
                 Debug.Log($"🧹 Cleaning existing Gradle project at: {fullAndroidBuildPath}");
                 Directory.Delete(fullAndroidBuildPath, true);
-                Debug.Log($"✅ Successfully cleaned Gradle project folder");
+                Debug.Log("✅ Successfully cleaned Gradle project folder");
             }
             catch (Exception ex)
             {
@@ -969,8 +959,8 @@ public static class AutoBuilder
         //Build
         // Note: Gradle wrapper and dependencies are updated automatically via UpdateGradleWrapper.OnPostGenerateGradleAndroidProject
         // after Unity generates the Gradle project, so we don't need to update them here
-        BuildReport buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), AndroidBuildPath, BuildTarget.Android, buildOptions);
-        
+        var buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), AndroidBuildPath, BuildTarget.Android, buildOptions);
+
         ValidateBuildResult(buildReport, $"Android Gradle Export ({AndroidBuildPath})");
     }
 
@@ -991,53 +981,53 @@ public static class AutoBuilder
         try
         {
             // Possible locations for gradle-wrapper.properties
-            System.Collections.Generic.List<string> possiblePaths = new System.Collections.Generic.List<string>();
-            
+            var possiblePaths = new List<string>();
+
             // If specific path provided (from callback), use it first
             if (!string.IsNullOrEmpty(gradleProjectPath))
             {
                 possiblePaths.Add(Path.Combine(gradleProjectPath, "..", "gradle", "wrapper", "gradle-wrapper.properties"));
                 possiblePaths.Add(Path.Combine(gradleProjectPath, "gradle", "wrapper", "gradle-wrapper.properties"));
             }
-            
+
             // Add default search paths
             possiblePaths.Add(Path.Combine(Application.dataPath, "..", "Library", "Bee", "Android", "Prj", "IL2CPP", "Gradle", "gradle", "wrapper", "gradle-wrapper.properties"));
             possiblePaths.Add(Path.Combine(Application.dataPath, "..", AndroidBuildPath, "gradle", "wrapper", "gradle-wrapper.properties"));
             possiblePaths.Add(Path.Combine(Application.dataPath, "..", "Library", "Bee", "artifacts", "Android", "Gradle", "gradle", "wrapper", "gradle-wrapper.properties"));
 
             const string targetGradleVersion = "8.0";
-            bool updated = false;
+            var updated = false;
 
-            foreach (string wrapperPath in possiblePaths)
+            foreach (var wrapperPath in possiblePaths)
             {
                 try
                 {
-                    string normalizedPath = Path.GetFullPath(wrapperPath);
+                    var normalizedPath = Path.GetFullPath(wrapperPath);
                     if (!File.Exists(normalizedPath))
                         continue;
 
-                    string content = File.ReadAllText(normalizedPath);
-                    string originalContent = content;
+                    var content = File.ReadAllText(normalizedPath);
+                    var originalContent = content;
 
                     // Update distributionUrl to Gradle 8.0+
                     // Pattern: distributionUrl=https\://services.gradle.org/distributions/gradle-7.5.1-all.zip or -bin.zip
                     // Support both -all.zip and -bin.zip variants
-                    System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex(
+                    var regex = new System.Text.RegularExpressions.Regex(
                         @"distributionUrl=https\\://services\.gradle\.org/distributions/gradle-(\d+\.\d+(?:\.\d+)?)-(all|bin)\.zip"
                     );
 
                     if (regex.IsMatch(content))
                     {
                         var match = regex.Match(content);
-                        string currentVersion = match.Groups[1].Value;
-                        string zipType = match.Groups[2].Value; // "all" or "bin"
-                        
+                        var currentVersion = match.Groups[1].Value;
+                        var zipType = match.Groups[2].Value; // "all" or "bin"
+
                         // Compare versions - only update if current version is less than 8.0
                         if (CompareVersion(currentVersion, targetGradleVersion) < 0)
                         {
                             // Preserve the zip type (all or bin) when updating
                             content = regex.Replace(content, $"distributionUrl=https\\://services.gradle.org/distributions/gradle-{targetGradleVersion}-{zipType}.zip");
-                            
+
                             if (content != originalContent)
                             {
                                 File.WriteAllText(normalizedPath, content);
@@ -1086,30 +1076,30 @@ public static class AutoBuilder
         {
             // JDK 17 path (for Gradle)
             // First, check environment variables (may be set by Jenkins or system)
-            string jdk17Path = Environment.GetEnvironmentVariable("JDK_17_PATH") 
+            var jdk17Path = Environment.GetEnvironmentVariable("JDK_17_PATH")
                             ?? Environment.GetEnvironmentVariable("JAVA_17_HOME")
                             ?? Environment.GetEnvironmentVariable("JAVA_HOME");
-            
+
             // If JAVA_HOME is not set or points to JDK 11, try to find JDK 17
             if (string.IsNullOrEmpty(jdk17Path) || jdk17Path.Contains("jdk-11") || jdk17Path.Contains("OpenJDK"))
             {
                 // Try common JDK 17 locations
                 // Order: Jenkins agent paths -> System paths -> User paths
-                System.Collections.Generic.List<string> possibleJdk17Paths = new System.Collections.Generic.List<string>();
-                
+                var possibleJdk17Paths = new List<string>();
+
                 // Jenkins agent paths (most common for CI/CD)
                 possibleJdk17Paths.Add(@"C:\jenkins-agent-new\tools\jdk-17");
                 possibleJdk17Paths.Add(@"C:\jenkins-agent-new\jdk-17");
                 possibleJdk17Paths.Add(@"C:\tools\jdk-17");
                 possibleJdk17Paths.Add(@"C:\Program Files\Java\jdk-17");
                 possibleJdk17Paths.Add(@"C:\Program Files (x86)\Java\jdk-17");
-                
+
                 // Eclipse Adoptium system paths
                 possibleJdk17Paths.Add(@"C:\Program Files\Eclipse Adoptium\jdk-17.0.17+10");
                 possibleJdk17Paths.Add(@"C:\Program Files\Eclipse Adoptium\jdk-17");
-                
+
                 // Try to find any jdk-17* folder in common locations
-                string[] commonBasePaths = new string[]
+                var commonBasePaths = new[]
                 {
                     @"C:\Program Files\Eclipse Adoptium",
                     @"C:\Program Files\Java",
@@ -1119,15 +1109,15 @@ public static class AutoBuilder
                     Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
                     Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)
                 };
-                
-                foreach (string basePath in commonBasePaths)
+
+                foreach (var basePath in commonBasePaths)
                 {
                     if (Directory.Exists(basePath))
                     {
                         try
                         {
                             var jdkFolders = Directory.GetDirectories(basePath, "jdk-17*", SearchOption.TopDirectoryOnly);
-                            foreach (string jdkFolder in jdkFolders)
+                            foreach (var jdkFolder in jdkFolders)
                             {
                                 if (!possibleJdk17Paths.Contains(jdkFolder))
                                 {
@@ -1141,20 +1131,20 @@ public static class AutoBuilder
                         }
                     }
                 }
-                
+
                 // User-specific paths (for local development)
-                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                 possibleJdk17Paths.Add(Path.Combine(localAppData, "Eclipse Adoptium", "jdk-17.0.17+10"));
                 possibleJdk17Paths.Add(Path.Combine(localAppData, "Eclipse Adoptium", "jdk-17"));
-                
+
                 // Try to find jdk-17* in user's LocalAppData
-                string adoptiumPath = Path.Combine(localAppData, "Eclipse Adoptium");
+                var adoptiumPath = Path.Combine(localAppData, "Eclipse Adoptium");
                 if (Directory.Exists(adoptiumPath))
                 {
                     try
                     {
                         var userJdkFolders = Directory.GetDirectories(adoptiumPath, "jdk-17*", SearchOption.TopDirectoryOnly);
-                        foreach (string jdkFolder in userJdkFolders)
+                        foreach (var jdkFolder in userJdkFolders)
                         {
                             if (!possibleJdk17Paths.Contains(jdkFolder))
                             {
@@ -1167,19 +1157,19 @@ public static class AutoBuilder
                         // Ignore errors
                     }
                 }
-                
+
                 // Search through all possible paths
-                foreach (string path in possibleJdk17Paths)
+                foreach (var path in possibleJdk17Paths)
                 {
                     if (!string.IsNullOrEmpty(path) && Directory.Exists(path))
                     {
-                        string javaExe = Path.Combine(path, "bin", "java.exe");
+                        var javaExe = Path.Combine(path, "bin", "java.exe");
                         if (File.Exists(javaExe))
                         {
                             // Verify it's actually JDK 17 by checking version
                             try
                             {
-                                System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo
+                                var psi = new System.Diagnostics.ProcessStartInfo
                                 {
                                     FileName = javaExe,
                                     Arguments = "-version",
@@ -1188,11 +1178,11 @@ public static class AutoBuilder
                                     RedirectStandardError = true,
                                     CreateNoWindow = true
                                 };
-                                
-                                using (System.Diagnostics.Process process = System.Diagnostics.Process.Start(psi))
+
+                                using (var process = System.Diagnostics.Process.Start(psi))
                                 {
                                     process.WaitForExit(3000);
-                                    string output = process.StandardError.ReadToEnd();
+                                    var output = process.StandardError.ReadToEnd();
                                     if (output.Contains("version \"17") || output.Contains("17.0"))
                                     {
                                         jdk17Path = path;
@@ -1212,65 +1202,65 @@ public static class AutoBuilder
                     }
                 }
             }
-            
+
             if (string.IsNullOrEmpty(jdk17Path) || !Directory.Exists(jdk17Path))
             {
                 Debug.LogWarning("⚠️ JDK 17 not found. Gradle may fail with JDK 11. Please install JDK 17 and set JAVA_HOME or JDK_17_PATH.");
-                Debug.LogWarning($"   Searched in: Jenkins agent paths, Program Files, Eclipse Adoptium, user directories");
+                Debug.LogWarning("   Searched in: Jenkins agent paths, Program Files, Eclipse Adoptium, user directories");
                 Debug.LogWarning($"   Current JAVA_HOME: {Environment.GetEnvironmentVariable("JAVA_HOME") ?? "not set"}");
                 return;
             }
-            
+
             Debug.Log($"[ConfigureGradleJavaHome] Using JDK 17: {jdk17Path}");
-            
+
             // Normalize path (use forward slashes for Gradle on Windows)
-            string normalizedJdkPath = jdk17Path.Replace('\\', '/');
-            
+            var normalizedJdkPath = jdk17Path.Replace('\\', '/');
+
             // Possible locations for gradle.properties
-            System.Collections.Generic.List<string> possibleGradlePropertiesPaths = new System.Collections.Generic.List<string>();
-            
+            var possibleGradlePropertiesPaths = new List<string>();
+
             // If specific path provided (from callback), use it first
             if (!string.IsNullOrEmpty(gradleProjectPath))
             {
                 possibleGradlePropertiesPaths.Add(Path.Combine(gradleProjectPath, "gradle.properties"));
                 possibleGradlePropertiesPaths.Add(Path.Combine(gradleProjectPath, "..", "gradle.properties"));
             }
-            
+
             // Add default search paths
             possibleGradlePropertiesPaths.Add(Path.Combine(Application.dataPath, "..", "Library", "Bee", "Android", "Prj", "IL2CPP", "Gradle", "gradle.properties"));
             possibleGradlePropertiesPaths.Add(Path.Combine(Application.dataPath, "..", AndroidBuildPath, "gradle.properties"));
             possibleGradlePropertiesPaths.Add(Path.Combine(Application.dataPath, "..", "Library", "Bee", "artifacts", "Android", "Gradle", "gradle.properties"));
-            
-            bool configured = false;
-            
-            foreach (string gradlePropertiesPath in possibleGradlePropertiesPaths)
+
+            var configured = false;
+
+            foreach (var gradlePropertiesPath in possibleGradlePropertiesPaths)
             {
                 try
                 {
-                    string normalizedPath = Path.GetFullPath(gradlePropertiesPath);
-                    string gradlePropertiesDir = Path.GetDirectoryName(normalizedPath);
-                    
+                    var normalizedPath = Path.GetFullPath(gradlePropertiesPath);
+                    var gradlePropertiesDir = Path.GetDirectoryName(normalizedPath);
+
                     // Create directory if it doesn't exist
                     if (!Directory.Exists(gradlePropertiesDir))
                     {
                         Directory.CreateDirectory(gradlePropertiesDir);
                     }
-                    
+
                     // Read or create gradle.properties
-                    string content = "";
+                    var content = "";
                     if (File.Exists(normalizedPath))
                     {
                         content = File.ReadAllText(normalizedPath);
                     }
-                    
+
                     // Check if org.gradle.java.home is already set
                     if (content.Contains("org.gradle.java.home"))
                     {
                         // Update existing entry
-                        System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex(
+                        var regex = new System.Text.RegularExpressions.Regex(
                             @"org\.gradle\.java\.home\s*=\s*.*"
                         );
-                        
+
                         if (regex.IsMatch(content))
                         {
                             content = regex.Replace(content, $"org.gradle.java.home={normalizedJdkPath}");
@@ -1288,9 +1278,10 @@ public static class AutoBuilder
                         {
                             content += "\n";
                         }
+
                         content += $"org.gradle.java.home={normalizedJdkPath}\n";
                     }
-                    
+
                     File.WriteAllText(normalizedPath, content);
                     configured = true;
                 }
@@ -1299,7 +1290,7 @@ public static class AutoBuilder
                     Debug.LogWarning($"[ConfigureGradleJavaHome] Failed to configure gradle.properties at {gradlePropertiesPath}: {ex.Message}");
                 }
             }
-            
+
             if (!configured)
             {
                 Debug.LogWarning("⚠️ Could not find or create gradle.properties file. Gradle may use JDK 11 instead of JDK 17.");
@@ -1321,27 +1312,27 @@ public static class AutoBuilder
         try
         {
             // Find gradlew or gradle executable
-            System.Collections.Generic.List<string> possibleGradlePaths = new System.Collections.Generic.List<string>();
-            
+            var possibleGradlePaths = new List<string>();
+
             if (!string.IsNullOrEmpty(gradleProjectPath))
             {
                 possibleGradlePaths.Add(Path.Combine(gradleProjectPath, "gradlew.bat"));
                 possibleGradlePaths.Add(Path.Combine(gradleProjectPath, "gradlew"));
             }
-            
+
             // Add default search paths
             possibleGradlePaths.Add(Path.Combine(Application.dataPath, "..", "Library", "Bee", "Android", "Prj", "IL2CPP", "Gradle", "gradlew.bat"));
             possibleGradlePaths.Add(Path.Combine(Application.dataPath, "..", AndroidBuildPath, "gradlew.bat"));
-            
-            foreach (string gradlePath in possibleGradlePaths)
+
+            foreach (var gradlePath in possibleGradlePaths)
             {
                 try
                 {
-                    string normalizedPath = Path.GetFullPath(gradlePath);
+                    var normalizedPath = Path.GetFullPath(gradlePath);
                     if (File.Exists(normalizedPath))
                     {
                         // Try to stop daemon (non-blocking, ignore errors)
-                        System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo
+                        var psi = new System.Diagnostics.ProcessStartInfo
                         {
                             FileName = normalizedPath,
                             Arguments = "--stop",
@@ -1350,11 +1341,12 @@ public static class AutoBuilder
                             RedirectStandardOutput = true,
                             RedirectStandardError = true
                         };
-                        
-                        using (System.Diagnostics.Process process = System.Diagnostics.Process.Start(psi))
+
+                        using (var process = System.Diagnostics.Process.Start(psi))
                         {
                             process.WaitForExit(5000); // Wait max 5 seconds
                         }
+
                         break;
                     }
                 }
@@ -1381,8 +1373,8 @@ public static class AutoBuilder
         {
             // For dev builds, disable SafeDK plugin to avoid MaxAdView errors
             // AAR file already contains all necessary classes, so Maven dependency is not needed
-            bool isDevelopment = IsDevelopment;
-            
+            var isDevelopment = IsDevelopment;
+
             if (isDevelopment)
             {
                 DisableAppLovinSafeDK(gradleProjectPath);
@@ -1408,28 +1400,28 @@ public static class AutoBuilder
         try
         {
             // Find launcher build.gradle
-            System.Collections.Generic.List<string> possibleBuildGradlePaths = new System.Collections.Generic.List<string>();
-            
+            var possibleBuildGradlePaths = new List<string>();
+
             if (!string.IsNullOrEmpty(gradleProjectPath))
             {
                 possibleBuildGradlePaths.Add(Path.Combine(gradleProjectPath, "launcher", "build.gradle"));
             }
-            
+
             // Add default search paths
             possibleBuildGradlePaths.Add(Path.Combine(Application.dataPath, "..", "Library", "Bee", "Android", "Prj", "IL2CPP", "Gradle", "launcher", "build.gradle"));
             possibleBuildGradlePaths.Add(Path.Combine(Application.dataPath, "..", AndroidBuildPath, "launcher", "build.gradle"));
-            
-            foreach (string buildGradlePath in possibleBuildGradlePaths)
+
+            foreach (var buildGradlePath in possibleBuildGradlePaths)
             {
                 try
                 {
-                    string normalizedPath = Path.GetFullPath(buildGradlePath);
+                    var normalizedPath = Path.GetFullPath(buildGradlePath);
                     if (!File.Exists(normalizedPath))
                         continue;
-                    
-                    string content = File.ReadAllText(normalizedPath);
-                    string originalContent = content;
-                    
+
+                    var content = File.ReadAllText(normalizedPath);
+                    var originalContent = content;
+
                     // Remove AppLovin SafeDK plugin for dev builds
                     // Replace "apply plugin: 'applovin-quality-service'" with commented version
                     if (content.Contains("apply plugin: 'applovin-quality-service'"))
@@ -1440,19 +1432,19 @@ public static class AutoBuilder
                             "// apply plugin: 'applovin-quality-service' // Disabled for dev builds"
                         );
                     }
-                    
+
                     // Remove applovin { } block for dev builds
                     if (content.Contains("applovin {"))
                     {
-                        int applovinStart = content.IndexOf("applovin {");
-                        int applovinEnd = content.IndexOf("}", applovinStart);
+                        var applovinStart = content.IndexOf("applovin {");
+                        var applovinEnd = content.IndexOf("}", applovinStart);
                         if (applovinEnd != -1)
                         {
-                            string applovinBlock = content.Substring(applovinStart, applovinEnd - applovinStart + 1);
+                            var applovinBlock = content.Substring(applovinStart, applovinEnd - applovinStart + 1);
                             content = content.Replace(applovinBlock, "// applovin { ... } // Disabled for dev builds\n");
                         }
                     }
-                    
+
                     // Remove Maven dependency if it exists (AAR file is sufficient)
                     if (content.Contains("com.applovin.mediation:max-sdk"))
                     {
@@ -1462,7 +1454,7 @@ public static class AutoBuilder
                             "    // implementation 'com.applovin.mediation:max-sdk:...' // Not needed, using AAR file\n"
                         );
                     }
-                    
+
                     if (content != originalContent)
                     {
                         File.WriteAllText(normalizedPath, content);
@@ -1490,54 +1482,54 @@ public static class AutoBuilder
         try
         {
             // Find settings.gradle
-            System.Collections.Generic.List<string> possibleSettingsGradlePaths = new System.Collections.Generic.List<string>();
-            
+            var possibleSettingsGradlePaths = new List<string>();
+
             if (!string.IsNullOrEmpty(gradleProjectPath))
             {
                 possibleSettingsGradlePaths.Add(Path.Combine(gradleProjectPath, "settings.gradle"));
             }
-            
+
             // Add default search paths
             possibleSettingsGradlePaths.Add(Path.Combine(Application.dataPath, "..", "Library", "Bee", "Android", "Prj", "IL2CPP", "Gradle", "settings.gradle"));
             possibleSettingsGradlePaths.Add(Path.Combine(Application.dataPath, "..", AndroidBuildPath, "settings.gradle"));
-            
-            foreach (string settingsGradlePath in possibleSettingsGradlePaths)
+
+            foreach (var settingsGradlePath in possibleSettingsGradlePaths)
             {
                 try
                 {
-                    string normalizedPath = Path.GetFullPath(settingsGradlePath);
+                    var normalizedPath = Path.GetFullPath(settingsGradlePath);
                     if (!File.Exists(normalizedPath))
                         continue;
-                    
-                    string content = File.ReadAllText(normalizedPath);
-                    string originalContent = content;
-                    
+
+                    var content = File.ReadAllText(normalizedPath);
+                    var originalContent = content;
+
                     // Check if AppLovin repository already exists in dependencyResolutionManagement
                     if (content.Contains("artifacts.applovin.com/android") && content.Contains("dependencyResolutionManagement"))
                     {
                         continue;
                     }
-                    
+
                     // Find dependencyResolutionManagement.repositories section
-                    int drmIndex = content.IndexOf("dependencyResolutionManagement");
+                    var drmIndex = content.IndexOf("dependencyResolutionManagement");
                     if (drmIndex == -1)
                     {
                         continue;
                     }
-                    
+
                     // Find repositories { block inside dependencyResolutionManagement
-                    int repositoriesIndex = content.IndexOf("repositories {", drmIndex);
+                    var repositoriesIndex = content.IndexOf("repositories {", drmIndex);
                     if (repositoriesIndex == -1)
                     {
                         continue;
                     }
-                    
+
                     // Find the closing brace of repositories block
-                    int braceCount = 0;
-                    int startIndex = repositoriesIndex;
-                    int insertIndex = -1;
-                    
-                    for (int i = startIndex; i < content.Length; i++)
+                    var braceCount = 0;
+                    var startIndex = repositoriesIndex;
+                    var insertIndex = -1;
+
+                    for (var i = startIndex; i < content.Length; i++)
                     {
                         if (content[i] == '{')
                             braceCount++;
@@ -1551,17 +1543,17 @@ public static class AutoBuilder
                             }
                         }
                     }
-                    
+
                     if (insertIndex == -1)
                     {
                         continue;
                     }
-                    
+
                     // Insert AppLovin Maven repository before closing brace
                     // Use content filter to only include AppLovin packages (for performance)
-                    string repositoryToAdd = "        maven { url 'https://artifacts.applovin.com/android'; content { includeGroupByRegex 'com.applovin.*' } }\n";
+                    var repositoryToAdd = "        maven { url 'https://artifacts.applovin.com/android'; content { includeGroupByRegex 'com.applovin.*' } }\n";
                     content = content.Insert(insertIndex, repositoryToAdd);
-                    
+
                     if (content != originalContent)
                     {
                         File.WriteAllText(normalizedPath, content);
@@ -1589,49 +1581,49 @@ public static class AutoBuilder
         try
         {
             // Find unityLibrary build.gradle
-            System.Collections.Generic.List<string> possibleBuildGradlePaths = new System.Collections.Generic.List<string>();
-            
+            var possibleBuildGradlePaths = new List<string>();
+
             if (!string.IsNullOrEmpty(gradleProjectPath))
             {
                 possibleBuildGradlePaths.Add(Path.Combine(gradleProjectPath, "unityLibrary", "build.gradle"));
             }
-            
+
             // Add default search paths
             possibleBuildGradlePaths.Add(Path.Combine(Application.dataPath, "..", "Library", "Bee", "Android", "Prj", "IL2CPP", "Gradle", "unityLibrary", "build.gradle"));
             possibleBuildGradlePaths.Add(Path.Combine(Application.dataPath, "..", AndroidBuildPath, "unityLibrary", "build.gradle"));
-            
-            foreach (string buildGradlePath in possibleBuildGradlePaths)
+
+            foreach (var buildGradlePath in possibleBuildGradlePaths)
             {
                 try
                 {
-                    string normalizedPath = Path.GetFullPath(buildGradlePath);
+                    var normalizedPath = Path.GetFullPath(buildGradlePath);
                     if (!File.Exists(normalizedPath))
                         continue;
-                    
-                    string content = File.ReadAllText(normalizedPath);
-                    string originalContent = content;
-                    
+
+                    var content = File.ReadAllText(normalizedPath);
+                    var originalContent = content;
+
                     // Check if androidx.core dependency already exists
                     if (content.Contains("androidx.core:core"))
                     {
                         continue;
                     }
-                    
+
                     // Find dependencies block and add androidx.core:core
                     // Look for "dependencies {" block
-                    int dependenciesIndex = content.IndexOf("dependencies {");
+                    var dependenciesIndex = content.IndexOf("dependencies {");
                     if (dependenciesIndex == -1)
                     {
                         Debug.LogWarning($"[AddAndroidXDependencies] Could not find 'dependencies {{' block in: {normalizedPath}");
                         continue;
                     }
-                    
+
                     // Find the closing brace of dependencies block
-                    int braceCount = 0;
-                    int startIndex = dependenciesIndex;
-                    int insertIndex = -1;
-                    
-                    for (int i = startIndex; i < content.Length; i++)
+                    var braceCount = 0;
+                    var startIndex = dependenciesIndex;
+                    var insertIndex = -1;
+
+                    for (var i = startIndex; i < content.Length; i++)
                     {
                         if (content[i] == '{')
                             braceCount++;
@@ -1646,17 +1638,17 @@ public static class AutoBuilder
                             }
                         }
                     }
-                    
+
                     if (insertIndex == -1)
                     {
                         Debug.LogWarning($"[AddAndroidXDependencies] Could not find closing brace of dependencies block in: {normalizedPath}");
                         continue;
                     }
-                    
+
                     // Insert androidx.core:core dependency before closing brace
-                    string dependencyToAdd = "    implementation 'androidx.core:core:1.12.0'\n";
+                    var dependencyToAdd = "    implementation 'androidx.core:core:1.12.0'\n";
                     content = content.Insert(insertIndex, dependencyToAdd);
-                    
+
                     if (content != originalContent)
                     {
                         File.WriteAllText(normalizedPath, content);
@@ -1681,15 +1673,15 @@ public static class AutoBuilder
     /// </summary>
     private static int CompareVersion(string v1, string v2)
     {
-        string[] parts1 = v1.Split('.');
-        string[] parts2 = v2.Split('.');
+        var parts1 = v1.Split('.');
+        var parts2 = v2.Split('.');
 
-        int maxLength = Math.Max(parts1.Length, parts2.Length);
-        
-        for (int i = 0; i < maxLength; i++)
+        var maxLength = Math.Max(parts1.Length, parts2.Length);
+
+        for (var i = 0; i < maxLength; i++)
         {
-            int part1 = i < parts1.Length ? int.Parse(parts1[i]) : 0;
-            int part2 = i < parts2.Length ? int.Parse(parts2[i]) : 0;
+            var part1 = i < parts1.Length ? int.Parse(parts1[i]) : 0;
+            var part2 = i < parts2.Length ? int.Parse(parts2[i]) : 0;
 
             if (part1 < part2) return -1;
             if (part1 > part2) return 1;
@@ -1698,18 +1690,17 @@ public static class AutoBuilder
         return 0;
     }
 
-
     public static void OnPostProcessBuildAndroid(BuildTarget target, string path)
     {
         //Only for Android!
         if (target != BuildTarget.Android)
             return;
-        
+
         // Update Gradle wrapper to fix compatibility issues (backup in case OnPostGenerateGradleAndroidProject wasn't called)
         UpdateGradleWrapperVersion();
-        
-        string oldAndroidBuildPath = AndroidBuildPath + "/" + Application.productName;
-        string replacedAndroidBuildPath = AndroidBuildPath + "/build";
+
+        var oldAndroidBuildPath = AndroidBuildPath + "/" + Application.productName;
+        var replacedAndroidBuildPath = AndroidBuildPath + "/build";
 
         if (Directory.Exists(oldAndroidBuildPath))
         {
@@ -1759,7 +1750,7 @@ public static class AutoBuilder
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.iOS, BuildTarget.iOS);
 
         // Set store directive
-        
+
         AddScriptDefineSymbol(BuildTargetGroup.iOS, TargetStoreSymbol);
 
         //Set Build version
@@ -1796,9 +1787,9 @@ public static class AutoBuilder
         }
 
         //Build
-        BuildReport buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), "Build/iOS", BuildTarget.iOS, buildOptions);
+        var buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), "Build/iOS", BuildTarget.iOS, buildOptions);
         ValidateBuildResult(buildReport, "iOS Export");
-        
+
         // Only exit Unity if running in CI/CD environment
         if (IsCIBuild())
         {
@@ -1820,7 +1811,7 @@ public static class AutoBuilder
         SetupGeneralVariables();
 
         // Set store directive
-        string store = Environment.GetEnvironmentVariable("UNITY_STORE");
+        var store = Environment.GetEnvironmentVariable("UNITY_STORE");
         if (!string.IsNullOrEmpty(store))
         {
             TargetStoreSymbol = "STORE_" + store;
@@ -1836,7 +1827,7 @@ public static class AutoBuilder
         //Get platform custom environment variables
         var webGLCompressionFormat = Environment.GetEnvironmentVariable("UNITY_WEBGL_COMPRESSION_FORMAT");
         var webGLLinkerTarget = Environment.GetEnvironmentVariable("UNITY_WEBGL_LINKER_TARGET");
-        int webGLHeapMax = Convert.ToInt32(Environment.GetEnvironmentVariable("UNITY_WEBGL_HEAP_MAX"));
+        var webGLHeapMax = Convert.ToInt32(Environment.GetEnvironmentVariable("UNITY_WEBGL_HEAP_MAX"));
         if (webGLHeapMax <= 0)
             webGLHeapMax = 1024;
 
@@ -1862,7 +1853,7 @@ public static class AutoBuilder
 
         PlayerSettings.WebGL.emscriptenArgs = "-s WASM_MEM_MAX=" + webGLHeapMax + "MB";
 
-        string exceptionsEnabled = Environment.GetEnvironmentVariable("UNITY_WEBGL_EXCEPTIONS");
+        var exceptionsEnabled = Environment.GetEnvironmentVariable("UNITY_WEBGL_EXCEPTIONS");
         if (!string.IsNullOrEmpty(exceptionsEnabled))
         {
             PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.None;
@@ -1899,7 +1890,7 @@ public static class AutoBuilder
         }
 
         //Build
-        BuildReport buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), $"Build/WebGL/{VersioningHelperUtility.VersionNumber}",
+        var buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), $"Build/WebGL/{VersioningHelperUtility.VersionNumber}",
             BuildTarget.WebGL,
             buildOptions);
         ValidateBuildResult(buildReport, $"WebGL ({VersioningHelperUtility.VersionNumber})");
@@ -1913,7 +1904,7 @@ public static class AutoBuilder
     {
         //Get general environment variables
         SetupGeneralVariables();
-       if (Convert.ToBoolean(Environment.GetEnvironmentVariable("USE_DESCRIPTION_AS_NAME"))) PlayerSettings.productName = PlayerSettings.WSA.applicationDescription;
+        if (Convert.ToBoolean(Environment.GetEnvironmentVariable("USE_DESCRIPTION_AS_NAME"))) PlayerSettings.productName = PlayerSettings.WSA.applicationDescription;
         //Get platform custom environment variables
 
         //Switch platform
@@ -1973,13 +1964,11 @@ public static class AutoBuilder
             EditorUserBuildSettings.connectProfiler = !IsRelease;
         }
 
-
         //Build
-        BuildReport buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), "Build/UWP",
+        var buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), "Build/UWP",
             BuildTarget.WSAPlayer, buildOptions);
         ValidateBuildResult(buildReport, "UWP Export");
     }
-
 
     /// <summary>
     /// Export Mac app
@@ -2026,10 +2015,9 @@ public static class AutoBuilder
         EditorUserBuildSettings.connectProfiler = false;
 
         //Build
-        BuildReport buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), $"Build/{projectName}", BuildTarget.StandaloneOSX, buildOptions);
+        var buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), $"Build/{projectName}", BuildTarget.StandaloneOSX, buildOptions);
         ValidateBuildResult(buildReport, $"Mac app ({projectName})");
     }
-
 
     /// <summary>
     /// Export Windows Standalone build
@@ -2041,7 +2029,7 @@ public static class AutoBuilder
         SetupGeneralVariables();
 
         //Get platform custom environment variables
-        string projectName = Environment.GetEnvironmentVariable("PROJECT_NAME");
+        var projectName = Environment.GetEnvironmentVariable("PROJECT_NAME");
         if (string.IsNullOrEmpty(projectName))
         {
             projectName = Application.productName;
@@ -2091,26 +2079,25 @@ public static class AutoBuilder
         }
 
         //Build
-        BuildReport buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), $"Build/{projectName}", BuildTarget.StandaloneWindows64,
+        var buildReport = BuildPipeline.BuildPlayer(GetScenePaths(), $"Build/{projectName}", BuildTarget.StandaloneWindows64,
             buildOptions);
         ValidateBuildResult(buildReport, $"Standalone Windows ({projectName})");
     }
 
-    static BuildPlayerOptions GetBuildPlayerOptions(
+    private static BuildPlayerOptions GetBuildPlayerOptions(
         bool askForLocation = false,
         BuildPlayerOptions defaultOptions = new BuildPlayerOptions())
     {
         // Get static internal "GetBuildPlayerOptionsInternal" method
-        MethodInfo method = typeof(BuildPlayerWindow.DefaultBuildMethods).GetMethod(
+        var method = typeof(BuildPlayerWindow.DefaultBuildMethods).GetMethod(
             "GetBuildPlayerOptionsInternal",
             BindingFlags.NonPublic | BindingFlags.Static);
 
         // invoke internal method
-        return (BuildPlayerOptions) method.Invoke(
+        return (BuildPlayerOptions)method.Invoke(
             null,
-            new object[] {askForLocation, defaultOptions});
+            new object[] { askForLocation, defaultOptions });
     }
-
 
     /// <summary>
     /// Insert <meta-data android:name="CHANNEL" android:value="Amazon" /> into manifest
@@ -2249,16 +2236,15 @@ public static class AutoBuilder
                             if (attributes[j].Name == "android:name")
                             {
                                 attributes[j].Value = "com.unity3d.player.UnityPlayerActivity";
-                                continue;
                             }
                         }
 
-                        XmlAttribute themeAttribute = doc.CreateAttribute("android", "theme",
+                        var themeAttribute = doc.CreateAttribute("android", "theme",
                             "http://schemas.android.com/apk/res/android");
                         themeAttribute.Value = "@style/UnityThemeSelector";
                         attributes.Append(themeAttribute);
 
-                        XmlAttribute exportedAttribute = doc.CreateAttribute("android", "exported",
+                        var exportedAttribute = doc.CreateAttribute("android", "exported",
                             "http://schemas.android.com/apk/res/android");
                         exportedAttribute.Value = "true";
                         attributes.Append(exportedAttribute);
@@ -2276,7 +2262,7 @@ public static class AutoBuilder
     /// Add script defined symbol to control compilation directives by platform
     /// Uses Unity 2022+ API (NamedBuildTarget)
     /// </summary>
-    static private void AddScriptDefineSymbol(BuildTargetGroup buildTargetGroup, string symbol)
+    private static void AddScriptDefineSymbol(BuildTargetGroup buildTargetGroup, string symbol)
     {
         Debug.Log($"[AddScriptDefineSymbol] START - BuildTargetGroup: {buildTargetGroup}, Symbol to add: '{symbol}'");
 
@@ -2349,9 +2335,9 @@ public static class AutoBuilder
                 id = addressableAssetSettings.profileSettings.GetProfileId("Development");
             }
 
-            foreach (AddressableAssetGroup group in addressableAssetSettings.groups)
+            foreach (var group in addressableAssetSettings.groups)
             {
-                BundledAssetGroupSchema schema = group.GetSchema<BundledAssetGroupSchema>();
+                var schema = group.GetSchema<BundledAssetGroupSchema>();
                 if (schema != null)
                 {
                     schema.Compression = BundledAssetGroupSchema.BundleCompressionMode.LZ4;
@@ -2382,7 +2368,7 @@ public static class AutoBuilder
     /// <param name="storeSymbol">The target store symbol to match (e.g. STORE_GooglePlay)</param>
     public static void FoldersRemover(string storeSymbol)
     {
-        string dataFilePath = Path.Combine(Application.dataPath, "submodule-core-publishing", "CI", "Remove.data");
+        var dataFilePath = Path.Combine(Application.dataPath, "submodule-core-publishing", "CI", "Remove.data");
 
         if (!File.Exists(dataFilePath))
         {
@@ -2390,20 +2376,20 @@ public static class AutoBuilder
             return;
         }
 
-        string fileContent = File.ReadAllText(dataFilePath);
+        var fileContent = File.ReadAllText(dataFilePath);
 
         // Split by semicolon to get individual entries
-        string[] entries = fileContent.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+        var entries = fileContent.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
-        foreach (string entry in entries)
+        foreach (var entry in entries)
         {
-            string[] parts = entry.Trim().Split(':');
+            var parts = entry.Trim().Split(':');
 
             if (parts.Length >= 3)
             {
-                string store = parts[0].Trim();
-                string define = parts[1].Trim();
-                string pathsString = parts[2].Trim();
+                var store = parts[0].Trim();
+                var define = parts[1].Trim();
+                var pathsString = parts[2].Trim();
                 Debug.Log("Removing folders for store: " + store + " define: " + define + " paths: " + pathsString);
                 // Check if the store matches the target store symbol
                 if (store == storeSymbol)
@@ -2413,18 +2399,18 @@ public static class AutoBuilder
                     var currentDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(
                         EditorUserBuildSettings.selectedBuildTargetGroup);
 
-                    var definesList = new List<string>(currentDefines.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+                    var definesList = new List<string>(currentDefines.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
 
                     // If the define is not in the defines list for current platform, remove the paths
                     if (!definesList.Contains(define))
                     {
-                        Debug.Log("Removing folders for store: !definesList.Contains("+define+")");
-                        string[] paths = pathsString.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                        Debug.Log("Removing folders for store: !definesList.Contains(" + define + ")");
+                        var paths = pathsString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
-                        foreach (string path in paths)
+                        foreach (var path in paths)
                         {
-                            string fullPath = Application.dataPath+ path;
-                            Debug.Log("Removing folders for store: check path "+fullPath);
+                            var fullPath = Application.dataPath + path;
+                            Debug.Log("Removing folders for store: check path " + fullPath);
                             if (Directory.Exists(fullPath))
                             {
                                 Debug.Log($"Removing folder: {fullPath}");
